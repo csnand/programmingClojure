@@ -4,7 +4,7 @@
   "I don't do a whole lot."
   [x]
   (println x "Hello, World!"))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; def bindings
 (def visitors (atom #{}))
 
@@ -22,6 +22,7 @@
   ([] (greeting "World"))
   ([username] (str "Hello " username))
   )
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; variadic parameter using &
 (defn date-chaperon-info
   [person-1 person-2 & chaperons]
@@ -29,17 +30,19 @@
            " went out with "
            (count chaperons) " chaperons." )
   )
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; require is to load Clojure namespace
 ;; while import is only for Java classes.
 ;; (import '(java.io InputStream File))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; anonymous function
 (require '[clojure.string :as cstr])
 (filter (fn [w] (> (count w) 2)) (cstr/split "a find day" #"\W+"))
 ;; equivalent to
 (filter #(> (count %) 2) (cstr/split "a find day" #"\W+"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; using let bindings and closures
 (defn indexable-words [text]
   (let [indexable-words? (fn [w] (> (count w) 2))]
@@ -47,6 +50,7 @@
     )
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; function composition using anonymous functions
 ;; also a practice of functional programming which
 ;; treats function as first-class citizen
@@ -60,6 +64,7 @@
 ;; make-greeter can be used directly
 ;; ((make-greeter "Howdy") "pardner")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; def binds a symbol to a value that stored in
 ;; Clojure vars
 (def testdefvar 42)
@@ -67,6 +72,7 @@
 ;; equivalent to reader macro #'
 (= (var testdefvar) #'testdefvar)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; destructing in clojure
 (def test-person {:first-name "Harry" :last-name "Potter"})
 
@@ -92,10 +98,12 @@
 (let [[x y :as coords] [1 2 3]]
   [x y coords])
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; meta data in Clojure
 (defn ^{:tag String} shout [^{:tag String} s]
   (clojure.string/upper-case s))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; flow controls
 ;; if - using do to introduce side effects
 (defn is-small? [number]
@@ -128,16 +136,17 @@
       (recur (conj result x) (dec x))))
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; find all path from origin(0, 0) to a
 ;; given point(x, y)
 (defn find-all-paths
   "recursion version: find all path from origin(0, 0) to a given point(x, y)"
   [x y]
   (if (or (zero? x) (zero? y)) 1
-      (+ (find-all-paths (- x 1) y) (find-all-paths x (- y 1)))
-      )
+      (+ (find-all-paths (- x 1) y) (find-all-paths x (- y 1))))
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; convert imperative to functional
 ;; with the indexOfAny function from
 ;; StringUtils.java as an example
@@ -176,5 +185,99 @@
 (defn index-of-any [pred coll]
   (first (index-filter pred coll)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; now let talk about sequences
+;; literally everything is a sequence
+;; which is immutable
+;; and has three core capabilities
+;; (first aseq)
+;; (rest aseq)
+;; (cons elt aseq) ; cons is short from construct
+
+;; seq functions works on all Clojure data structures
+;; (seq coll) will return a seq on any seq-able collections
+;; (= (next aseq) (seq (rest aseq))) => true
+(def testlist '(1 2 3))
+(first  testlist)
+(rest   testlist)
+(cons 0 testlist)
+(= (next testlist) (seq (rest testlist)))
+
+(def testvector [1 2 3])
+(first  testvector)
+(rest   testvector)
+(cons 0 testvector)
+(= (next testvector) (seq (rest testvector)))
+
+;; also work on maps sets
+;; thses two structures are unordered
+;; as opposed to
+;; (sorted-map & kv-pairs) (sorted-set & elements)
+;; which is sorted by their natural orders
+(first {:fname "test" :lname "test"}) ; map
+(first #{:the :quick :brown :fox})    ; set
+
+;; other capabilities of seq are
+;; (conj coll element & elements)
+;; (into to-coll from-coll)
+;; both work in an efficient insertion manner
+;; depending the underlying data structures
+
+;; add elts to a collection
+(conj testlist 5 6 7)
+;; adds all elts from one coll to another coll
+(into testvector testlist)
+
+;; Most Clojure sequences are lazy
+;; all sequences are immutable
+;; seq functions always return seq
+;; regardless of their input
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; THE sequence library
+;; functions can be categorised into four groups =>
+;; functions => create / filter / transform seqs
+;; and seq predicates
+
+;; creating seqs
+;; (range start? end? steps?) ; end exclusive
+(range 0 9) ; start .. end
+(range 0 101 2) ; start .. end .. steps
+(range 0 -1 -0.25) ; neg steps
+(range 1/2 4 1) ; ratios which means 1/2 a step till 4
+
+;; (repeat n elt)
+(repeat 10 "a")
+(repeat 10 5)
+
+;; (iterate f elt) ; apply function f to element and continues forever
+;; (iterate inc 1) ; infinite seq from 1 to infinitum
+;; lazy evaluation happens here
+(take 10 (iterate inc 1))
+(take 10 (repeat 1))
+
+;; (cycle coll) ; repeat a collection infinitely
+(take 12 (cycle (range 0 3)))
+
+;; (interleave & coll)
+;; equivalent to zip function in haskell
+;; stop when one coll is exausted
+(interleave (iterate inc 1) "abcde")
+
+;; (interpose separator coll)
+;; return A seq with all elements segregated by separator
+(apply str (interpose "," ["a", "b", "c", "d"]))
+
+;; equivalent to performance-optimised version
+;; (join separator seq)
+(require '[clojure.string :refer [join]])
+(join \, ["a", "b", "c", "d"])
 
 
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
