@@ -4,7 +4,7 @@ A Clojure library designed to practice Clojure while reading Programming Clojure
 
 ## Usage
 
-FYI, this project is generated using leiningen. 
+FYI, this project is generated using leiningen, and edited using Emacs.
 
 ## License
 
