@@ -171,9 +171,10 @@
 (defn index-filter [pred coll]
   (when pred
     (for [[idx elt] (indexed coll) :when (pred elt)] idx)))
-
-
-
+;; now the indexOfAny function above
+;; can be constructed as follow
+(defn index-of-any [pred coll]
+  (first (index-filter pred coll)))
 
 
 
