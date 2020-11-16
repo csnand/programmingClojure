@@ -273,6 +273,104 @@
 (require '[clojure.string :refer [join]])
 (join \, ["a", "b", "c", "d"])
 
+;; filtering seqs - lazy evaluation applied here
+;; (filter     pred coll) ; see example above
+;; (take-while pred coll)
+;; (drop-while pred coll)
+;; (split-at   index coll)
+;; (split-with pred coll)
+(take 10 (filter even? (iterate inc 1)))
+(take 10 (filter odd? (iterate inc 1)))
+
+(split-at 5 (range 10))
+(split-with #(<= % 10) (range 0 20 2))
+
+(take-while #(<= % 10) (range 0 20 2))
+(drop-while #(<= % 10) (range 0 20 2))
+
+;; seq pred
+;; (every?     pred coll)
+;; (not-every? pred coll)
+;; (not-any?   pred coll)
+(every? even? [2 4 6 8])
+(every? odd? [1 3 5])
+
+;; (some pred coll) ; partial true
+;; but is not a predicate
+;; returns first result for non-true match
+(some odd? [1 3 5])
+(some identity [nil false 1 true])
+
+;; transforming seqs
+;; (map f coll)
+(map #(format "<p>%s</p>" %) ["the" "quick" "brown" "fox"])
+(map #(format "<%s>%s</%s>" %1 %2 %1)
+     ["h1" "h2" "h3" "h1" "h5"]
+     ["the" "quick" "brown" "fox"])
+
+;; (reduce f coll)
+;; total-up a seq
+(reduce + (range 1 101))
+(reduce * (range 1 11))
+
+;; (sort    comp? coll)
+;; (sort-by comp? coll)
+(sort (reverse (range 11)))
+(sort-by #(.toString %) [42 7 11 1])
+(sort-by :grade < [{:grade 100} {:grade 2} {:grade 97}])
+
+;; list comprehension
+;; Clojure generalises list comprehension
+;; to sequence comprehension
+;; (for [binding-form coll-expr filter-expr? ...] expr)
+;; as appeared in a previous example
+(defn index-filter-example [pred coll]
+  (when pred
+    (for [[idx elt] (indexed coll) :when (pred elt)] idx)))
+
+;; rewritten using list comprehension
+;; for elt in coll such that return expr
+(for [word ["the" "quick" "brown" "fox"]]
+  (format "<p>%s<p/>" word))
+
+;; for every number in coll yield :when even?
+(take 20 (for [n (iterate inc 1)
+               :when (even? n)] n))
+
+;; for every number in coll yield :while even?
+(for [n (conj (filter even? (take 20 (iterate inc 1))) 3)
+      :while (even? n)] n)
+
+;; for is quite handy when performing
+;; cartesian product with several bindings
+;; for would iterates rightmost binding first
+;; then all the way to the left
+;; the following example enumerates all
+;; possible positions in a chess board
+(for [file "ABCDEFGH"
+      rank "12345678"]
+  (format "%c%c" file rank))
+
+;; using (doall coll) ; yield result
+;;       (dorun coll) ; return nil
+;;           which means it only pass elts
+;;           without saving it to memory
+;; to force evaluation
+;; the following binding
+;; wont yield result until
+;; explicitly called
+(def testx (for [i (range 3)]
+             (do (println i) i)))
+(doall testx)
+(dorun testx)
+
+;; seq-ing on regular expressions
+;; (re-seq regexp string)
+(map clojure.string/upper-case (re-seq #"\w+" "the quick brown fox"))
+(for [word (re-seq #"\w+" "the quick brown fox")]
+  (format "%s" (clojure.string/upper-case word)))
+
+
 
 
 
