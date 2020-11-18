@@ -535,6 +535,70 @@
  (cset/join composers (cset/select #(= (:name %) "Requiem") compositions))
  [:country])
 
+;; functional programming in Clojure
+;; tail call optimisations (TCOs)
+;; which avoid both avoid stack and heap overflow
+;; letfn macro is quite useful here
+;; (letfn fnspecs & body) ; fnspecs ==> [(fname [params*] exprs)+]
+
+;; this version would fail even for small n
+(defn stackoverflow-fibo [n]
+  (cond (= n 0) 0
+        (= n 1) 0
+        :else (+ (stackoverflow-fibo (- n 1))
+                 (stackoverflow-fibo (- n 2)))))
+
+;; still failed for large numbers
+(defn tail-fibo [n]
+  (letfn [(fib [current-num next-num n]
+            (if (zero? n)
+              current-num
+              (fib next-num (+ current-num next-num) (dec n))))]
+    (fib 0N 1N n)))
+
+;; Solutions in Clojure
+;; 1. explicit self-recursion with recur
+;; 2. lazy sequences
+;; 3. explicit mutual recursion with trampoline
+
+;; self-recursion with recur
+;; works with large numbers
+;; but only return one number each time
+(defn recur-fibo [n]
+  (letfn [(fib [current-num next-num n]
+            (if (zero? n)
+              current-num
+              (recur next-num (+ current-num next-num) (dec n))))]
+    (fib 0N 1N n)))
+
+;; lazy sequences with (lazt-seq & body)
+;; lazy-seq invokes its body only when needed
+;; then it caches the result for subsequent calls
+;; the key point is to wrap recursive part in
+;; (lazy-seq) to replace
+;; recursion with laziness
+(defn lazy-seq-fibo
+  ([] (concat [0 1] (lazy-seq-fibo 0N 1N)))
+  ([a b]
+   (let [n (+ a b)]
+     (lazy-seq
+      (cons n (lazy-seq-fibo b n))))))
+
+;; but most of the time
+;; (lazy-seq) doesnt need to be used directly
+;; instead existing sequence library functions
+;; that return lazy-sequences can be reused
+
+;; iterate begins with first pair of fibo numbers
+;; and generate a sequence of pairs the indicate
+;; the current number and the next
+;; then the fibo sequence can be obtained by
+;; simply take the first number of each pair
+(defn iterate-fibo []
+  (map first (iterate (fn [[a b]] [b (+ a b)]) [0N 1N])))
+
+
+
 
 
 
