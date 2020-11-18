@@ -101,7 +101,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; meta data in Clojure
 (defn ^{:tag String} shout [^{:tag String} s]
-  (clojure.string/upper-case s))
+  (cstr/upper-case s))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; flow controls
@@ -270,8 +270,7 @@
 
 ;; equivalent to performance-optimised version
 ;; (join separator seq)
-(require '[clojure.string :refer [join]])
-(join \, ["a", "b", "c", "d"])
+(cstr/join \, ["a", "b", "c", "d"])
 
 ;; filtering seqs - lazy evaluation applied here
 ;; (filter     pred coll) ; see example above
@@ -366,9 +365,9 @@
 
 ;; seq-ing on regular expressions
 ;; (re-seq regexp string)
-(map clojure.string/upper-case (re-seq #"\w+" "the quick brown fox"))
+(map cstr/upper-case (re-seq #"\w+" "the quick brown fox"))
 (for [word (re-seq #"\w+" "the quick brown fox")]
-  (format "%s" (clojure.string/upper-case word)))
+  (format "%s" (cstr/upper-case word)))
 
 ;; seq over the file system
 (import 'java.io.File)
@@ -393,9 +392,148 @@
 (take 4 (line-seq (reader "src/progammingclj/core.clj")))
 
 ;; wrap reader in with-open bindings
+;; to close reader correctly when the
+;; body is complete
 (with-open [rdr (reader "src/progammingclj/core.clj")]
   (count (line-seq rdr)))
 
+(with-open [rdr (reader "src/progammingclj/core.clj")]
+  (count (filter #(re-find #"\S" %) (line-seq rdr))))
+
+;; count loc in current project
+(defn non-blank?   [line] (not (cstr/blank? line)))
+(defn non-comment? [line] (not (cstr/starts-with? ";;" line)))
+(defn clj-src? [file] (.endsWith (.toString file) ".clj"))
+(defn clj-loc [base-file]
+  (reduce +
+          (for [file (file-seq base-file) :when (clj-src? file)]
+            (with-open [rdr (reader file)]
+              (count (filter (and non-blank? non-comment?)
+                             (line-seq rdr)))))))
+(println (clj-loc (File. ".")))
+
+;; structure-specific functions
+;; peek pop for lists (first elt)
+(peek '(1 2 3))
+(pop  '(1 2 3))
+
+;; .. for vectors (LIFO)
+(peek [1 2 3])
+(pop  [1 2 3])
+
+;; get assoc for vectors
+;; vectors themselves are functions
+;; therefore function syntax applies here
+(= (get [1 2 3] 2) ([1 2 3] 2))
+(assoc [1 2 3 4] 4 :five)
+
+;; (subvec avec start end?)
+(subvec [1 2 3 4 5 6] 3)
+
+;; (keys map) (vals map) for maps
+;; which return all keys or all vals
+(def testmap {:one "1" :two "2"})
+(keys testmap)
+(vals testmap)
+
+;; (get map key value-if not-found?)
+;; default value-not-found is nil
+;; maps are also functions
+;; :keywords are also functions
+;; therefore :keywords can be used in reverse order
+(= (testmap :one) (:one testmap))
+(= (get testmap :three) (testmap :three))
+(get testmap :three :not-found)
+
+;; (contains? map key)
+(contains? testmap :one)
+
+;; add, remove and select kv pair in maps
+(dissoc (assoc testmap :three 3) :three)
+(select-keys testmap [:one :two])
+
+;; merge multiple maps
+;; keys in the rightmost map
+;; will be the final result if conflict
+(merge testmap {:one "one"})
+
+;; (merge-with merge-fn & maps)
+;; results will be depend on merge-fn function
+;; if there are conflicts
+(merge-with concat testmap {:one "one"})
+
+;; functions on sets
+;; based on set theory (maths)
+;; also part of relational algebra
+(require '[clojure.set :as cset])
+(def testset-1 #{"1" "2" "three"})
+(def testset-2 #{"one" "two" "three"})
+
+(cset/union        testset-1 testset-2)
+(cset/difference   testset-1 testset-2)
+(cset/intersection testset-1 testset-2)
+(cset/select #(= 1 (count %)) testset-1)
+
+;; the six relational primitives are
+;; set union  set difference
+;; rename     selection
+;; projection cross product
+
+;; therefore a simple relational database
+;; can be implemented using maps and sets
+(def compositions
+  #{
+    {:name "The Art of the Fugue" :composer "J. S. Bach"}
+    {:name "Musical Offering"    :composer "J. S. Bach"}
+    {:name "Requiem"             :composer "W. A. Mozart"}
+    {:name "Requiem"             :composer "Giuseppe Verdi"}})
+(def composers
+  #{
+    {:composer "J. S. Bach"     :country "Germany"}
+    {:composer "W. A. Mozart"   :country "Austria"}
+    {:composer "Giuseppe Verdi" :country "Italy"}})
+(def nations
+  #{
+    {:nation "Germany" :language "German"}
+    {:nation "Austria" :language "German"}
+    {:nation "Italy"   :language "Italian"}})
+
+;; rename key :name to :title
+(def titled-compositions (cset/rename compositions {:name :title}))
+
+;; (select pred relation)
+;; returns a map where pred is true
+;; analogous to WHERE clause in SQL SELECT
+(cset/select #(= (:title %) "Requiem") titled-compositions)
+
+;; (project relation keys)
+;; project returns only the part of
+;; maps that match a set of keys
+;; similar to SQL SELECT that
+;; specifies a subset of columns
+(cset/project compositions [:name ])
+
+;; cartesian product
+;; aka cross product
+;; can be done using list comprehension
+;; or (join relation-1 relation-2 keymap?)
+;; that returns some subset of
+;; full cross product
+(cset/join compositions composers)
+
+;; if key names in the two relation dont match
+;; keymap can be used to map key names in relation-1
+;; to key names in relation-2
+;; the following example maps
+;; :country to :nation
+(cset/join composers nations {:country :nation})
+
+;; SELECT country FROM composers
+;;    INNER JOIN country ON
+;;     (SELECT * FROM compositions WHERE name == "Requiem")
+(cset/project
+ (cset/join composers (cset/select #(= (:name %) "Requiem") compositions))
+ [:country])
 
 
 
