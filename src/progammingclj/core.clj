@@ -361,8 +361,8 @@
 ;; explicitly called
 (def testx (for [i (range 3)]
              (do (println i) i)))
-(doall testx)
-(dorun testx)
+;; (doall testx)
+;; (dorun testx)
 
 ;; seq-ing on regular expressions
 ;; (re-seq regexp string)
@@ -370,6 +370,31 @@
 (for [word (re-seq #"\w+" "the quick brown fox")]
   (format "%s" (clojure.string/upper-case word)))
 
+;; seq over the file system
+(import 'java.io.File)
+(defn get-file-name []
+  (map #(.getName %) (.listFiles (File. "."))))
+
+;; depth-first walk
+(defn count-files []
+  (count (file-seq (File. "."))))
+
+;; filter recent files
+(defn min-to-ms [mins] (* mins 1000 60))
+(defn recent-modified? [file]
+  (> (.lastModified file)
+     (- (System/currentTimeMillis) (min-to-ms 30))))
+;; (filter recent-modified? (file-seq (File. ".")))
+
+;; seq-ing the stream
+(require '[clojure.java.io :refer [reader]])
+;; read current file and take first 4 lines
+;; leave reader open
+(take 4 (line-seq (reader "src/progammingclj/core.clj")))
+
+;; wrap reader in with-open bindings
+(with-open [rdr (reader "src/progammingclj/core.clj")]
+  (count (line-seq rdr)))
 
 
 
