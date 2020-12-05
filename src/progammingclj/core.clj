@@ -12,24 +12,21 @@
   "put username into visitors and return greeting message"
   [username]
   (swap! visitors conj username)
-  (str "Hello " username)
-  )
+  (str "Hello " username))
 (defrecord Book [title author])
 
 (defn greeting
   "return greeting message.
   the default username is World"
   ([] (greeting "World"))
-  ([username] (str "Hello " username))
-  )
+  ([username] (str "Hello " username)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; variadic parameter using &
 (defn date-chaperon-info
   [person-1 person-2 & chaperons]
   (println person-1 " and " person-2
            " went out with "
-           (count chaperons) " chaperons." )
-  )
+           (count chaperons) " chaperons." ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; require is to load Clojure namespace
 ;; while import is only for Java classes.
@@ -46,17 +43,14 @@
 ;; using let bindings and closures
 (defn indexable-words [text]
   (let [indexable-words? (fn [w] (> (count w) 2))]
-    (filter indexable-words? (cstr/split text #"\W+"))
-    )
-  )
+    (filter indexable-words? (cstr/split text #"\W+"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; function composition using anonymous functions
 ;; also a practice of functional programming which
 ;; treats function as first-class citizen
 (defn make-greeter [greeting-prefix]
-  (fn [username] (str greeting-prefix ", " username))
-  )
+  (fn [username] (str greeting-prefix ", " username)))
 
 (def hello-greeting (make-greeter "Hello"))
 (def aloha-greeting (make-greeter "Aloha"))
@@ -111,9 +105,7 @@
     "yes"
     (do
       (println "Saw a big number" number)
-      "no")
-    )
-  )
+      "no")))
 ;; loop/recur
 ;; (loop [bindings*] exprs*)
 ;; loop sets a recursion point
@@ -123,9 +115,7 @@
   (loop [result []
          x 5]
     (if (zero? x) result
-        (recur (conj result x) (dec x)))
-    )
-  )
+        (recur (conj result x) (dec x)))))
 
 ;; recur can be used to go back to the top of function
 ;; in this case, the entire body of function acts as
@@ -133,8 +123,7 @@
 (defn countdown
   ([x] (countdown [] x))
   ([result x] (if (zero? x) result
-      (recur (conj result x) (dec x))))
-  )
+      (recur (conj result x) (dec x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; find all path from origin(0, 0) to a
@@ -143,8 +132,7 @@
   "recursion version: find all path from origin(0, 0) to a given point(x, y)"
   [x y]
   (if (or (zero? x) (zero? y)) 1
-      (+ (find-all-paths (- x 1) y) (find-all-paths x (- y 1))))
-  )
+      (+ (find-all-paths (- x 1) y) (find-all-paths x (- y 1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; convert imperative to functional
@@ -484,9 +472,9 @@
 (def compositions
   #{
     {:name "The Art of the Fugue" :composer "J. S. Bach"}
-    {:name "Musical Offering"    :composer "J. S. Bach"}
-    {:name "Requiem"             :composer "W. A. Mozart"}
-    {:name "Requiem"             :composer "Giuseppe Verdi"}})
+    {:name "Musical Offering"     :composer "J. S. Bach"}
+    {:name "Requiem"              :composer "W. A. Mozart"}
+    {:name "Requiem"              :composer "Giuseppe Verdi"}})
 (def composers
   #{
     {:composer "J. S. Bach"     :country "Germany"}
