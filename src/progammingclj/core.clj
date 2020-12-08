@@ -390,7 +390,7 @@
 
 ;; count loc in current project
 (defn non-blank?   [line] (not (cstr/blank? line)))
-(defn non-comment? [line] (not (cstr/starts-with? ";;" line)))
+(defn non-comment? [line] (not (cstr/starts-with? ";" line)))
 (defn clj-src? [file] (.endsWith (.toString file) ".clj"))
 (defn clj-loc [base-file]
   (reduce +
@@ -585,8 +585,185 @@
 (defn iterate-fibo []
   (map first (iterate (fn [[a b]] [b (+ a b)]) [0N 1N])))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; How many times in sequence does the heads come up twice?
+;; (partition size step? coll)
+;; breaks collection into chunks of size
 
+;; (comp f & fs)
+;; compose two or more functions
+(def ^{:doc "Count items matching a filter"}
+  count-if (comp count filter))
 
+(= (count-if odd? [1 2 3 4 5]) 3)
+
+(defn count-runs
+  "Count runs of length n where pred is true in coll"
+  [n pred coll]
+  (count-if #(every? pred %) (partition n 1 coll)))
+
+;; currying and partial application
+;; there is no real currying in clojure
+;; but partial will do the trick most of the time
+
+;; (partial f & partial-args)
+;; performs a partial application of a function
+(def ^{:doc "Count runs of length 2 that are both heads"}
+  count-heads-pairs (partial count-runs 2 #(= % :h)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; recursion revisited
+;; mutual recursion
+;; A mutual recursion occurs when the recursion bounces
+;; between tow or more functions.
+
+;; because my-odd? and my-even? both call the other
+;; therefore both vars need to be created before the
+;; definition of functions. (def or decalre)
+;; declare macro can be used to create both vars without
+;; initial bindings
+
+;; recur cannot be applied for mutual recursion
+;; stackoverflow will occur for large n
+(declare my-odd-1? my-even-1?)
+(defn my-odd? [n]
+  (if (= n 0)
+    false
+    (my-even? (dec n))))
+(defn my-even? [n]
+  (if (= n 0)
+    true
+    (my-odd? (dec n))))
+
+;; converting to self-recursion
+(defn parity [n]
+  (loop [n n par 0]
+    (if (= n 0)
+      par
+      (recur (dec n) (- 1 par)))))
+(defn my-odd-2? [n]
+  (= 0 (parity n)))
+(defn my-even-2? [n]
+  (= 1 (parity n)))
+
+;; trampolining mutual recursion
+;; (trampoline f & partial-args)
+;; if the return value is not a function
+;; trampoline acts like calling function directly
+;; if a function is returned, then trampoline will
+;; call that function recursively.
+
+;; tail recursion version of fib can be rewritten
+;; using trampoline by prepending # to any recursive calls
+;; example only. Don't write code like this.
+(defn trampoline-fibo [n]
+  (let [fib (fn fib [f-2 f-1 current]
+              (let [f (+ f-2 f-1)]
+                (if (= n current)
+                  f
+                  #(fib f-1 f (inc current)))))]
+    (cond
+      (= n 0) 0
+      (= n 1) 1
+      :else (fib 0N 1 2))))
+
+;; trampoline does a recur, therefore can handle large input
+;; (= 875N (rem (trampoline trampoline-fibo 1000000) 1000))
+;; recur is preferred for self-recursion
+;; while trampoline for mutual recursion
+
+;; mutual recursive my-odd and my-even
+;; can be rewritten using trampoline as follow
+(declare trampoline-odd? trampoline-even?)
+(defn trampoline-odd? [n]
+  (if (= n 0)
+    false
+    #(trampoline-even? (dec n))))
+(defn trampoline-even? [n]
+  (if (= n 0)
+    true
+    #(trampoline-odd? (dec n))))
+;; In practice, many Clojure programmers
+;; never encounter a case requiring trampoline at all.
+
+;; replacing recursion with laziness
+;; with the following example
+;; wallingford's scheme implementation of replace-symbol
+;; overly-literal port, do not use
+;; will cause stackoverflow for deeply nested structures
+(declare replace-symbol replace-symbol-expression)
+(defn replace-symbol [coll oldsym newsym]
+  (if (empty? coll)
+    ()
+    (cons (replace-symbol-expression
+           (first coll) oldsym newsym)
+          (replace-symbol
+           (rest coll) oldsym newsym))))
+(defn replace-symbol-expression [symbol-expr oldsym newsym]
+  (if (symbol? symbol-expr)
+    (if (= symbol-expr oldsym)
+      newsym
+      symbol-expr)
+    (replace-symbol symbol-expr oldsym newsym)))
+
+;; helper function to create deeply nested data structure
+(defn deeply-nested [n]
+  (loop [n n
+         result '(bottom)]
+    (if (= n 0)
+      result
+      (recur (dec n) (list result)))))
+
+;; stackoverflow occurs here
+;; (replace-symbol (deeply-nested 10000) 'bottom 'deepest)
+
+;; the following version replaced recursion with lazy-seq
+(defn- coll-or-scalar [x & _] (if (coll? x) :collection :scalar))
+(defmulti replace-symbol coll-or-scalar)
+(defmethod replace-symbol :collection [coll oldsym newsym]
+  (lazy-seq
+   (when (seq coll)
+     (cons (replace-symbol (first coll) oldsym newsym)
+           (replace-symbol (rest coll) oldsym newsym)))))
+(defmethod replace-symbol :scalar [obj oldsym newsym]
+  (if (= obj oldsym) newsym obj))
+
+;; Shortcutting Recursion with Memoization
+
+;; the male and famale sequence are defined as follows
+;; F(0) = 1; M(0) = 0
+;; F(n) = n - M(F(n-1)), n > 0
+;; M(n) = n - F(M(n-1)), n > 0
+
+;; do not use these directly
+;; as it performs terribly for large value of n
+(declare m f)
+(defn m [n]
+  (if (zero? n)
+    0
+    (- n (f (m (dec n))))))
+(defn f [n]
+  (if (zero? n)
+    1
+    (- n (m (f (dec n))))))
+
+;; Memoization trades space for time
+;; by caching the results of past calculations.
+;; When you call a memoized function,
+;; it first checks your input against a
+;; map of previous inputs and their outputs.
+;; If it finds the input in the map, it can return the
+;; output immediately, without having to perform the calculation again.
+(def m (memoize m))
+(def f (memoize f))
+
+;; memoization alone is not enough as stackoverflow may still
+;; occur for large n before the cache can be built.
+
+;; The final trick is to guarantee that the cache is built from the ground up by
+;; exposing sequences, instead of functions.
+(def m-seq (map m (iterate inc 0)))
+(def f-seq (map f (iterate inc 0)))
 
 
 
