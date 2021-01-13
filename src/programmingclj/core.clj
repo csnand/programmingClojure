@@ -377,15 +377,15 @@
 (require '[clojure.java.io :refer [reader]])
 ;; read current file and take first 4 lines
 ;; leave reader open
-(take 4 (line-seq (reader "src/progammingclj/core.clj")))
+(take 4 (line-seq (reader "src/programmingclj/core.clj")))
 
 ;; wrap reader in with-open bindings
 ;; to close reader correctly when the
 ;; body is complete
-(with-open [rdr (reader "src/progammingclj/core.clj")]
+(with-open [rdr (reader "src/programmingclj/core.clj")]
   (count (line-seq rdr)))
 
-(with-open [rdr (reader "src/progammingclj/core.clj")]
+(with-open [rdr (reader "src/programmingclj/core.clj")]
   (count (filter #(re-find #"\S" %) (line-seq rdr))))
 
 ;; count loc in current project
@@ -629,11 +629,11 @@
 (defn my-odd? [n]
   (if (= n 0)
     false
-    (my-even? (dec n))))
+    (my-even-1? (dec n))))
 (defn my-even? [n]
   (if (= n 0)
     true
-    (my-odd? (dec n))))
+    (my-odd-1? (dec n))))
 
 ;; converting to self-recursion
 (defn parity [n]
@@ -708,6 +708,8 @@
 
 ;; helper function to create deeply nested data structure
 (defn deeply-nested [n]
+  ;; bind n to n
+  ;; bind '(bottom) to result
   (loop [n n
          result '(bottom)]
     (if (= n 0)
