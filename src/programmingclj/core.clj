@@ -767,6 +767,8 @@
 (def m-seq (map m (iterate inc 0)))
 (def f-seq (map f (iterate inc 0)))
 
+;; eager transformation
+
 
 
 
