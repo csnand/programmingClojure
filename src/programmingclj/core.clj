@@ -767,8 +767,89 @@
 (def m-seq (map m (iterate inc 0)))
 (def f-seq (map f (iterate inc 0)))
 
-;; eager transformation
 
+;; eager transformation
+(defn square [x] (* x x))
+(defn sum-square-seq [n]
+  (vec (map square (range n))))
+
+;; the above version will
+;; first calculate range
+;; then apply map
+;; finally return vector
+;; which means three times as much sequence overhead
+
+;; we can perform intermediate transformation on the input collection
+;; and put the result directly into the output vector
+;; using into with map transducer
+
+;; a transducer is a function that captures the essence of a
+;; collection transformation without tying it to the form of
+;; either the input collection or the output collection.
+
+;; (into output-collection transformation input-collection)
+(defn sum-square [n]
+  (into [] (map square) (range n)))
+
+
+;; optimising performance
+
+;; apply multiple transformation within into
+;; in a single pass over the input
+
+;; find all the predicate functions in the namespaces we've loaded
+;; predicate functions usualy ending in ?
+;; then find their public vars
+;; convert them to friendly names
+;; using sequence, transformation can be chained together with ->>
+(defn preds-seq []
+  (->> (all-ns)
+       (map ns-publics)
+       (mapcat vals)
+       (filter #(cstr/ends-with? % "?"))
+       (map #(str (.-sym %)))
+       vec))
+
+;; transducers are composed in a stack-like fashion
+;; transducer can be composed in a similarly pipelined fashion using comp.
+(defn preds []
+  (into []
+        (comp (map ns-publics)
+              (mapcat vals)
+              (filter #(cstr/ends-with? % "?"))
+              (map #(str (.-sym %))))
+        (all-ns)))
+
+;; the sequence implementation creates four intermediate sequences
+;; the transducer implementation composes the four transformation into a
+;; single combined transformation ans applies it during
+;; a single traversal of the input sequence
+
+;; removing the intermediate sequences can result in a
+;; significant reduction in memory usage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 
