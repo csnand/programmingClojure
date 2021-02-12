@@ -909,6 +909,12 @@
 ;; the syntax
 ;; (spec/def name spec)
 ;; spec names must be fully qualified keywords.
+;; Auto-resolved keywords start with :: e.g.
+;; :: test-resolver in this namespace might expand
+;; :programmingclj.core/test-resolver
+
+;; predicates specs can be used to validating data
+(s/def ::company-name string?)
 
 
 
