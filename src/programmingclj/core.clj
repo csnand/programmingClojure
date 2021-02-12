@@ -792,6 +792,7 @@
   (into [] (map square) (range n)))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; optimising performance
 
 ;; apply multiple transformation within into
@@ -828,21 +829,86 @@
 ;; removing the intermediate sequences can result in a
 ;; significant reduction in memory usage
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; managing external resources
+;; file is not closed and not clear for gc  when to close it.
+;; as this is lazy approach
+(defn non-blank-lines-seq-lazy [file-name]
+  (let [reader (clojure.java.io/reader file-name)]
+    (filter non-blank? (line-seq reader))))
 
+;; for small files, it can be transformed to eagerly processing
+;; but it will eventually throw OutOfMemoryError
+(defn non-blank-lines-eager [file-name]
+  (with-open [reader (clojure.java.io/reader file-name)]
+    (into []
+          (filter non-blank?)
+          (line-seq reader))))
 
+(defn non-blank-lines-counter-lazy [file-name]
+  (count (non-blank-lines-seq-lazy file-name)))
 
+;; An eduction is a suspended transformation (like a sequence),
+;; but it processes the entire input each time its asked (usually just once)
+(defn non-blank-lines-education [reader]
+  (eduction (filter non-blank?) (line-seq reader)))
 
+;; eager approach
+;; The eduction processes each line and then
+;; releases the associated memory, so the eduction will hold
+;; only one line in memory at a time.
+(defn non-blank-lines-reduce [file-name]
+  (with-open [reader (clojure.java.io/reader file-name)]
+    (reduce (fn [cnt el] (inc cnt)) 0 (non-blank-lines-education reader))))
 
+;; Transducers and eductions allow us to choose exactly when an input source
+;; is processed and thus know when the external resource is done and ready to
+;; release. With lazy sequences, it’s much harder to know when processing is
+;; “done” and it’s time to release.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; specification
 
+;; public class Ingredient {
+;;     private String name;
+;;     private double quantity;
+;;     private Unit unit;
+;;     // ...
+;;     public static Ingredient scale(Ingredient ingredient, double factor) {
+;;         ingredient.setQuantity(ingredient.getQuantity() * factor);
+;;         return ingredient;
+;;     }
+;; }
 
+;; the above class as an example for spec
+(require '[clojure.spec.alpha :as s])
+(defn scale-ingredient [ingredient factor]
+  (update ingredient :quatity * factor))
 
+;; Specs describing an ingredient
+(s/def ::ingredient
+  (s/keys :req [::name ::quantity ::unit]))
+(s/def ::name string?)
+(s/def ::quantity number?)
+(s/def ::unit keyword?)
+;; Function spec for scale-ingredient
+(s/fdef scale-ingredient
+  :args (s/cat :ingredient ::ingredient :factor number?)
+  :ret ::ingredient)
+;; These specs give us a precise description of the shape of an ingredient map,
+;; its fields, and their contents. The function spec gives us an explicit definition
+;; of the arguments and return value of scale-ingredient. These specs don’t just
+;; serve as documentation. The spec library uses them to provide several addi-
+;; tional tools that operate on specs—data validation, explanations of invalid
+;; data, generation of example data, and even automatically created generative
+;; tests for functions with a spec.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
-
+;; the syntax
+;; (spec/def name spec)
+;; spec names must be fully qualified keywords.
 
 
 
@@ -856,3 +922,4 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
