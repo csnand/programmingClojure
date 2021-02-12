@@ -921,7 +921,46 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; State and Concurrency
+;; Clojure provides four reference types:
+;; • Refs manage coordinated, synchronous changes to shared state.
+;; • Atoms manage uncoordinated, synchronous changes to shared state.
+;; • Agents manage asynchronous changes to shared state.
+;; • Vars manage thread-local state.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
