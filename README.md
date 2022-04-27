@@ -1,4 +1,4 @@
-# programmingclj
+# Programming Clojure
 
 A Clojure library designed to practice Clojure while reading Programming Clojure.
 
